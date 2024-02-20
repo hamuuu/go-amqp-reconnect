@@ -59,10 +59,20 @@ func (c *Connection) Channel() (*Channel, error) {
 }
 
 // Dial wrap amqp.Dial, dial and get a reconnect connection
-func Dial(url string) (*Connection, error) {
-	conn, err := amqp.Dial(url)
-	if err != nil {
-		return nil, err
+func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
+	var conn Connection
+	var err error
+	
+	if tlsParam == new(tls.Config) {
+		conn, err = amqp.Dial(url)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		conn, err = amqp.DialTLS(url, tlsParam)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	connection := &Connection{
