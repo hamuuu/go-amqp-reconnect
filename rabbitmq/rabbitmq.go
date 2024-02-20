@@ -2,7 +2,7 @@ package rabbitmq
 
 import (
 	"time"
-
+	"crypto/tls"
 	"sync/atomic"
 
 	"github.com/streadway/amqp"
