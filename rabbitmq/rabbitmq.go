@@ -63,7 +63,7 @@ func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 	var conn Connection
 	var err error
 	
-	if tlsParam == nil) {
+	if tlsParam == nil {
 		conn, err = amqp.Dial(url)
 		if err != nil {
 			return nil, err
