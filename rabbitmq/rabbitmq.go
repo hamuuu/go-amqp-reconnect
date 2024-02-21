@@ -4,7 +4,7 @@ import (
 	"time"
 	"crypto/tls"
 	"sync/atomic"
-
+	"github.com/johansetia/go-amqp-reconnect/rabbitmq"
 	"github.com/streadway/amqp"
 )
 
@@ -60,7 +60,7 @@ func (c *Connection) Channel() (*Channel, error) {
 
 // Dial wrap amqp.Dial, dial and get a reconnect connection
 func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
-	var conn Connection
+	var conn rabbitmq.Connection
 	var err error
 	
 	if tlsParam == nil {
