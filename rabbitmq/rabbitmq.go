@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"crypto/tls"
+	"log"
 	"sync/atomic"
 	"time"
 
@@ -62,6 +63,7 @@ func (c *Connection) Channel() (*Channel, error) {
 func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 	var conn Connection
 	var err error
+	dt := time.Now()
 
 	if tlsParam == nil {
 		conn.Connection, err = amqp.Dial(url)
@@ -84,10 +86,11 @@ func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 			reason, ok := <-connection.Connection.NotifyClose(make(chan *amqp.Error))
 			// exit this goroutine if closed by developer
 			if !ok {
-				debug("connection closed")
+				log.Println("connection closed")
 				break
 			}
-			debugf("connection closed, reason: %v", reason)
+
+			log.Println("connection closed, reason:", reason, "at: ", dt.Format("01-02-2006 15:04:05"))
 
 			// reconnect if not closed by developer
 			for {
@@ -98,19 +101,19 @@ func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 					conn, err := amqp.Dial(url)
 					if err == nil {
 						connection.Connection = conn
-						debugf("reconnect success")
+						log.Println("reconnect success at: ", dt.Format("01-02-2006 15:04:05"))
 						break
 					}
 				} else {
 					conn, err := amqp.DialTLS(url, tlsParam)
 					if err == nil {
+						log.Println("reconnect success at: ", dt.Format("01-02-2006 15:04:05"))
 						connection.Connection = conn
-						debugf("reconnect success")
 						break
 					}
 				}
 
-				debugf("reconnect failed, err: %v", err)
+				log.Println("reconnect failed, err: ", err, "at: ", dt.Format("01-02-2006 15:04:05"))
 			}
 		}
 	}()
