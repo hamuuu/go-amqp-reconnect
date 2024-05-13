@@ -1,9 +1,10 @@
 package rabbitmq
 
 import (
-	"time"
 	"crypto/tls"
 	"sync/atomic"
+	"time"
+
 	"github.com/streadway/amqp"
 )
 
@@ -61,7 +62,7 @@ func (c *Connection) Channel() (*Channel, error) {
 func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 	var conn Connection
 	var err error
-	
+
 	if tlsParam == nil {
 		conn.Connection, err = amqp.Dial(url)
 		if err != nil {
@@ -93,11 +94,20 @@ func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 				// wait 1s for reconnect
 				time.Sleep(delay * time.Second)
 
-				conn, err := amqp.Dial(url)
-				if err == nil {
-					connection.Connection = conn
-					debugf("reconnect success")
-					break
+				if tlsParam == nil {
+					conn, err := amqp.Dial(url)
+					if err == nil {
+						connection.Connection = conn
+						debugf("reconnect success")
+						break
+					}
+				} else {
+					conn, err := amqp.DialTLS(url, tlsParam)
+					if err == nil {
+						connection.Connection = conn
+						debugf("reconnect success")
+						break
+					}
 				}
 
 				debugf("reconnect failed, err: %v", err)
