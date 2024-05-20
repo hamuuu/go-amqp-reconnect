@@ -9,7 +9,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-const delay = 3 // reconnect after delay seconds
+const delay = 1 // reconnect after delay seconds
 
 // Connection amqp.Connection wrapper
 type Connection struct {
