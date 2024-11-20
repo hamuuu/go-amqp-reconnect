@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"crypto/tls"
 	"log"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -61,24 +62,31 @@ func (c *Connection) Channel() (*Channel, error) {
 
 // Dial wrap amqp.Dial, dial and get a reconnect connection
 func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
-	var conn Connection
-	var err error
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Println("Failed to get hostname, using default connection name:", err)
+		hostname = "default-connection"
+	}
+
+	config := amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": hostname,
+		},
+	}
+
+	if tlsParam != nil {
+		config.TLSClientConfig = tlsParam
+	}
+
 	dt := time.Now()
 
-	if tlsParam == nil {
-		conn.Connection, err = amqp.Dial(url)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		conn.Connection, err = amqp.DialTLS(url, tlsParam)
-		if err != nil {
-			return nil, err
-		}
+	conn, err := amqp.DialConfig(url, config)
+	if err != nil {
+		return nil, err
 	}
 
 	connection := &Connection{
-		Connection: conn.Connection,
+		Connection: conn,
 	}
 
 	go func() {
@@ -97,20 +105,11 @@ func Dial(url string, tlsParam *tls.Config) (*Connection, error) {
 				// wait 1s for reconnect
 				time.Sleep(delay * time.Second)
 
-				if tlsParam == nil {
-					conn, err := amqp.Dial(url)
-					if err == nil {
-						connection.Connection = conn
-						log.Println("reconnect success at: ", dt.Format("01-02-2006 15:04:05"))
-						break
-					}
-				} else {
-					conn, err := amqp.DialTLS(url, tlsParam)
-					if err == nil {
-						log.Println("reconnect success at: ", dt.Format("01-02-2006 15:04:05"))
-						connection.Connection = conn
-						break
-					}
+				conn, err := amqp.DialConfig(url, config)
+				if err == nil {
+					connection.Connection = conn
+					log.Println("reconnect success at: ", dt.Format("01-02-2006 15:04:05"))
+					break
 				}
 
 				log.Println("reconnect failed, err: ", err, "at: ", dt.Format("01-02-2006 15:04:05"))
